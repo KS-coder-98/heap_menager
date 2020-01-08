@@ -14,16 +14,21 @@
 
 #define align4(x) (((((x)-1) >>2)<<2)+4)
 
+
+typedef enum struct status{FREE, NOT_FREE} status;
+
+
 typedef struct memblock_t
 {
-    int fence_start[4] = {9, 9, 9, 9};
+    int fence_start[4];
     memblock_t *next = nullptr;
     memblock_t *prev = nullptr;
     size_t size = 0;
-    bool free = true; // true - is free; false - is not free
-    void *ptr; // wskźnik na dane
-    size_t checksum;
-    int fance_end[4] = {9, 9, 9, 9};
+    status status_ = status::NOT_FREE;
+    void *ptr{}; // wskźnik na dane
+    size_t checksum{};
+    int fence_end[4];
+    void init_memblock();
 }memblock_t;
 
 typedef struct heap_menager{

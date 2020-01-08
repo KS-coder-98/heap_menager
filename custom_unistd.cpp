@@ -9,14 +9,17 @@ int heap_setup()
 {
     assert(!heap_menager_.init);
 
-    memblock_t * start_block = (memblock_t *)custom_sbrk(0);
+    auto *start_block = (memblock_t *)custom_sbrk(0);
+    start_block->init_memblock();
     if ( custom_sbrk(PAGE_SIZE) == (void*)-1 ){
         printf("sbrk fail");
         return -1;
     }
 
-    memblock_t* end_block = (memblock_t*)custom_sbrk(0) - 1;
-    memblock_t* first_empty_block = start_block + 1;
+    auto end_block = (memblock_t*)custom_sbrk(0) - 1;
+    end_block->init_memblock();
+    auto first_empty_block = start_block + 1;
+    first_empty_block->init_memblock();
 
     start_block->next = first_empty_block;
     first_empty_block->next = end_block;
@@ -28,7 +31,7 @@ int heap_setup()
     heap_menager_.init = true;
 
     first_empty_block->size = (intptr_t)custom_sbrk(0) - (intptr_t)start_block - 3 * SIZE_METADANE;
-
+    first_empty_block->status_ = status::NOT_FREE;
     return 0;
 }
 
@@ -37,13 +40,29 @@ void print_debug()
 {
     if ( heap_menager_.heap_head == nullptr )
         return;
-//    printf("|%p %p %ld|", heap_menager_.heap_head, heap_menager_.heap_tail, heap_menager_.heap_tail-heap_menager_.heap_head);
     for (auto iterator = heap_menager_.heap_head; iterator; iterator = iterator->next) {
         printf("\n##############################\n");
-        printf("\tAdres %p\n", iterator);
+        printf("\tAddress %p\n", iterator);
         printf("\tSize %zu\n", iterator->size);
-        printf("\tfree %d\n", iterator->free);
+        if ( iterator->status_ == status::NOT_FREE )
+            printf("\tIs free Yes\n");
+        else
+            printf("\tIs free No\n");
+/*
+        for ( size_t  i = 0; i < 4; i++){
+            printf("%d ", iterator->fence_start[i]);
+            if ( i == 3 )
+                printf("\n");
+        }
+  */
         printf("##############################\n");
     }
 }
 
+
+void memblock_t::init_memblock() {
+    for ( size_t i = 0; i<4; i++){
+        fence_start[i] = 9;
+        fence_end[i] = 9;
+    }
+}
