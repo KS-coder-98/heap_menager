@@ -8,12 +8,16 @@ int main(int argc, char **argv)
     // Zapoznaj się z funkcją main w bloku #if...#endif
 
     heap_setup();
-//    memblock_t* test = find_block(4);
-//    printf("\nblok ==%p\n", test);
     int *test = (int *)heap_malloc(sizeof(int)*2);
-    *test = 5;
-    *(test+1) = 6;
-    printf("kurwa dzila |||%d %d|||\n",*test, *(test+1));
+    double *test2 = (double *)heap_malloc(sizeof(double)*2);
+    double *test3 = (double *)heap_malloc(sizeof(double)*2);
+    double *test4 = (double *)heap_malloc(sizeof(double)*2);
+    double *test5 = (double *)heap_malloc(sizeof(double)*2);
+//    heap_free(test);
+    heap_free(test2);
+    heap_free(test4);
+//    heap_free(test5);
+    heap_free(test3);
     print_debug();
     return 0;
 }

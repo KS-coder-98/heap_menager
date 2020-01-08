@@ -50,7 +50,10 @@ void heap_free(void* memblock);
 void* heap_realloc(void* memblock, size_t size);
 
 memblock_t* find_block(size_t size);
+memblock_t* fusion(memblock_t* block);
+
 void split_block(memblock_t*, size_t);
+
 
 void* custom_sbrk(intptr_t delta);
 
