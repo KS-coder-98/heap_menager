@@ -13,11 +13,12 @@ int main(int argc, char **argv)
     double *test3 = (double *)heap_malloc(sizeof(double)*2);
     double *test4 = (double *)heap_malloc(sizeof(double)*2);
     double *test5 = (double *)heap_malloc(sizeof(double)*2);
+    double *test6 = (double *)heap_calloc(3, sizeof(double));
 //    heap_free(test);
-    heap_free(test2);
-    heap_free(test4);
+//    heap_free(test2);
+//    heap_free(test4);
 //    heap_free(test5);
-    heap_free(test3);
+//    heap_free(test3);
     print_debug();
     return 0;
 }

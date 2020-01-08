@@ -3,6 +3,7 @@
 //
 
 #include <cstdio>
+#include <cstring>
 #include "custom_unistd.h"
 
 int heap_setup()
@@ -92,7 +93,8 @@ void* heap_malloc(size_t count)
 };
 void* heap_calloc(size_t number, size_t size)
 {
-
+    auto temp1 = (memblock_t*)heap_malloc(number*size) - (intptr_t)SIZE_METADANE;
+    memset(temp1 + SIZE_METADANE, 0, temp1->size);
 };
 void heap_free(void* block)
 {
