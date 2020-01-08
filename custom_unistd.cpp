@@ -33,7 +33,9 @@ int heap_setup()
 
     first_empty_block->size = (intptr_t)custom_sbrk(0) - (intptr_t)start_block - 3 * SIZE_METADANE;
     first_empty_block->status_ = status::FREE;
-    first_empty_block->data = first_empty_block + SIZE_METADANE;
+//    first_empty_block->data = first_empty_block + SIZE_METADANE;
+//    first_empty_block->data = first_empty_block + SIZE_METADANE;
+
     return 0;
 }
 
@@ -42,9 +44,11 @@ void print_debug()
 {
     if ( heap_menager_.heap_head == nullptr )
         return;
+    printf("Size mataData %lu\n", SIZE_METADANE);
     for (auto iterator = heap_menager_.heap_head; iterator; iterator = iterator->next) {
         printf("\n##############################\n");
         printf("\tAddress %p\n", iterator);
+        printf("\tData address %p\n", iterator->data);
         printf("\tSize %zu\n", iterator->size);
         if ( iterator->status_ == status::FREE )
             printf("\tIs free Yes\n");
@@ -60,23 +64,25 @@ void memblock_t::init_memblock() {
         fence_start[i] = 9;
         fence_end[i] = 9;
     }
-    data = this+SIZE_METADANE;
+    data = this + 1;
     status_ = status::NOT_FREE;
 }
 
 void* heap_malloc(size_t count)
 {
     memblock_t *new_block = nullptr;//, *last;
-    size_t s =align4(count) ;
+    size_t s;
+    if (sizeof(void*) == 8 )
+        s = align8(count);
+    else
+        s = align4(count);
     if ( heap_menager_.init ){
-//        last = heap_menager_.heap_head;
         new_block = find_block(s);
         new_block->init_memblock();
-//        new_block
         if ( new_block ){ //jesli znajdzie wystarczajaco duzy blok
             //czy mozna podzielic blok
             new_block->status_ = status::NOT_FREE;
-            if ( (new_block->size - s) >= (SIZE_METADANE + 4) )
+            if ( (new_block->size - s) >= (SIZE_METADANE + sizeof(void*)) )
                 split_block(new_block, s);
             new_block->status_ = status::NOT_FREE;
         }
@@ -88,7 +94,7 @@ void* heap_malloc(size_t count)
         //first innit;
         printf("tuuu");
     }
-    new_block->data = new_block+SIZE_METADANE;
+    new_block->data = new_block+1;
     return ( new_block->data );
 };
 void* heap_calloc(size_t number, size_t size)
@@ -125,7 +131,7 @@ void split_block(memblock_t* block, size_t s)
     assert(block->data != nullptr);
     new_block = (memblock_t*)((intptr_t)block->data + s);
     new_block->init_memblock();
-    new_block->size = (intptr_t)block->size - s - 4;
+    new_block->size = block->size - s - SIZE_METADANE;
     new_block->next = block->next;
     new_block->status_ = status::FREE;
     block->size = s;

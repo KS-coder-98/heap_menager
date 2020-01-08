@@ -9,10 +9,13 @@
 #include <cassert>
 
 #define PAGE_SIZE       4096    // Długość strony w bajtach
+#define MACHONE_WORD sizeof(void*)
+
 
 #define SIZE_METADANE sizeof(memblock_t)
 
-#define align4(x) (((((x)-1) >>2)<<2)+4)
+#define align4(x) (((((x)-1)>>2)<<2)+4)
+#define align8(x) ((x + 7) & (-8))
 
 
 typedef enum struct status{FREE, NOT_FREE} status;

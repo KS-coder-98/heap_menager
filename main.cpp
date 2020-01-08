@@ -6,19 +6,24 @@ int main(int argc, char **argv)
 {
     // Tutaj można pisać kod
     // Zapoznaj się z funkcją main w bloku #if...#endif
-
     heap_setup();
     int *test = (int *)heap_malloc(sizeof(int)*2);
     double *test2 = (double *)heap_malloc(sizeof(double)*2);
     double *test3 = (double *)heap_malloc(sizeof(double)*2);
+    test3[0] = 2.23;
+    test3[1]= 1.23;
+//    heap_free(test3);
+    double *test6 = (double *)heap_malloc(2 * sizeof(double));
+
+//    double *test6 = (double *)heap_calloc(2, sizeof(double));
+    printf("%lf %lf\n", test3[0], test3[1]);
     double *test4 = (double *)heap_malloc(sizeof(double)*2);
     double *test5 = (double *)heap_malloc(sizeof(double)*2);
-    double *test6 = (double *)heap_calloc(3, sizeof(double));
-//    heap_free(test);
-//    heap_free(test2);
-//    heap_free(test4);
-//    heap_free(test5);
-//    heap_free(test3);
+    heap_free(test);
+    heap_free(test2);
+    heap_free(test4);
+    heap_free(test5);
+    heap_free(test3);
     print_debug();
     return 0;
 }
