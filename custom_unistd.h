@@ -25,7 +25,7 @@ typedef struct memblock_t
     memblock_t *prev = nullptr;
     size_t size = 0;
     status status_ = status::NOT_FREE;
-    void *ptr{}; // wskźnik na dane
+    void *data = nullptr; // wskźnik na dane
     size_t checksum{};
     int fence_end[4];
     void init_memblock();
@@ -42,10 +42,15 @@ static heap_menager heap_menager_;
 
 void print_debug();
 
-
 int heap_setup();
 
+void* heap_malloc(size_t count);
+void* heap_calloc(size_t number, size_t size);
+void heap_free(void* memblock);
+void* heap_realloc(void* memblock, size_t size);
 
+memblock_t* find_block(size_t size);
+void split_block(memblock_t*, size_t);
 
 void* custom_sbrk(intptr_t delta);
 

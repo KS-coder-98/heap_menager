@@ -90,10 +90,6 @@ void __attribute__((destructor)) memory_check(void)
     //}
 }
 
-//
-//
-//
-
 
 void* custom_sbrk(intptr_t delta)
 {
