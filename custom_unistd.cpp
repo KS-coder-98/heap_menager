@@ -9,7 +9,7 @@ int heap_setup()
 {
     assert(!heap_menager_.init);
 
-    memblock_t* start_block = (memblock_t*)custom_sbrk(0);
+    memblock_t * start_block = (memblock_t *)custom_sbrk(0);
     if ( custom_sbrk(PAGE_SIZE) == (void*)-1 ){
         printf("sbrk fail");
         return -1;
@@ -23,16 +23,11 @@ int heap_setup()
     first_empty_block->prev = start_block;
     end_block->prev = first_empty_block;
 
-    heap_menager_.heap_head = start_block;
-    heap_menager_.heap_tail = end_block;
+    heap_menager_.heap_head = (memblock_t*)start_block;
+    heap_menager_.heap_tail = (memblock_t*)end_block;
     heap_menager_.init = true;
 
-//    tu jest blad !!!!!!!!!!!!1
-
-    printf("%p %p %ld", start_block, (memblock_t*)custom_sbrk(0)-1,  (start_block-(memblock_t*)custom_sbrk(0)-SIZE_METADANE) );
-    first_empty_block->size = start_block - (memblock_t*)custom_sbrk(0) - 1;
-
-//
+    first_empty_block->size = (intptr_t)custom_sbrk(0) - (intptr_t)start_block - 3 * SIZE_METADANE;
 
     return 0;
 }
