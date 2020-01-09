@@ -96,8 +96,8 @@ void* heap_malloc(size_t count)
         }
     }
     else{
-        //first innit;
-        printf("tuuu");
+        heap_setup();
+        return heap_malloc(s);
     }
     new_block->data = new_block+1;
     return ( new_block->data );
@@ -210,8 +210,9 @@ int extend_heap(size_t counter)
     old_end->next = new_end_block;
     old_end->status_ = status::FREE;
     old_end->size += PAGE_SIZE - SIZE_METADANE;
+    //tu jest blad ze wskzniki bloku old end wskzuje na poczatek pierwszej strony !!!!
+    fusion(old_end); //chceck
 
     heap_menager_.heap_tail = new_end_block;
-    //blad tu w skaznikach
     return 0;
 }

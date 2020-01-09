@@ -6,13 +6,15 @@ int main(int argc, char **argv)
 {
     // Tutaj można pisać kod
     // Zapoznaj się z funkcją main w bloku #if...#endif
-    heap_setup();
+//    heap_setup();
 //    extend_heap(51);
-    int *test = (int *)heap_malloc(sizeof(int)*2);
+//    int *test = (int *)heap_malloc(sizeof(int)*2);
+//    auto test = (int*)heap_realloc(test, sizeof(int)*6);
     int *test1 = (int*)heap_malloc(1400);
     int *test11 = (int*)heap_malloc(1400);
-    int *test111 = (int*)heap_malloc(700);
-    int *test1111 = (int*)heap_malloc(60);
+    extend_heap(7);
+//    int *test111 = (int*)heap_malloc(700);
+//    int *test1111 = (int*)heap_malloc(60);
 
 
 
