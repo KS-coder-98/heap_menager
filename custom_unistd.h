@@ -7,6 +7,8 @@
 
 #include <unistd.h>
 #include <cassert>
+#include <cmath>
+#include <mutex>
 
 #define PAGE_SIZE       4096    // Długość strony w bajtach
 #define MACHONE_WORD sizeof(void*)
@@ -27,6 +29,7 @@ typedef struct memblock_t
     memblock_t *next = nullptr;
     memblock_t *prev = nullptr;
     size_t size = 0;
+    std::mutex lock;
     status status_ = status::NOT_FREE;
     void *data = nullptr; // wskźnik na dane
     size_t checksum{};
@@ -37,6 +40,7 @@ typedef struct memblock_t
 typedef struct heap_menager{
     memblock_t *heap_head = nullptr; // wskźnik na pierwszy nieusuwalny element
     memblock_t *heap_tail = nullptr; // wskaźnik na osttni nie smiertelny element
+    std::mutex lock;
     bool init = false;
 }heap_menager;
 
@@ -61,6 +65,7 @@ void split_block(memblock_t*, size_t);
 void* custom_sbrk(intptr_t delta);
 
 int heap_setup(void);
+int extend_heap(size_t counter);
 
 
 #if defined(sbrk)
