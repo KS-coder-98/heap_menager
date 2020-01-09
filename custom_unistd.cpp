@@ -104,7 +104,7 @@ void* heap_calloc(size_t number, size_t size)
 };
 void heap_free(void* block)
 {
-    auto temp = (memblock_t*)block - (intptr_t)SIZE_METADANE;
+    auto temp = (memblock_t*)block - 1;
     temp->status_= status::FREE;
     fusion(temp);
 };
@@ -146,13 +146,16 @@ memblock_t* fusion(memblock_t* block)
     if ( block->next && block->next->status_==status::FREE ){
         block->size += SIZE_METADANE + block->next->size;
         block->next = block->next->next;
-        if ( block->next )
-            block->next->prev = block;
+        block->next->prev = block;
     }
     //check prev
+
     if ( block->prev && block->prev->status_==status::FREE ){
-        block->size +=SIZE_METADANE + block->next->size;
-        block->prev = block->prev->prev;
+        block->prev->size += SIZE_METADANE + block->size;
+        block->prev->next = block->next;
+        block->next->prev = block->prev;
+
+//
     }
     return block;
 }
