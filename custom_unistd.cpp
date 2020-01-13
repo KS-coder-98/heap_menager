@@ -6,6 +6,8 @@
 #include <cstring>
 #include "custom_unistd.h"
 
+void *return_set_debug(int fileline, const char *filename, memblock_t *temp);
+
 int heap_setup()
 {
     assert(!heap_menager_.init);
@@ -48,6 +50,10 @@ void print_debug()
         printf("\tAddress %p\n", iterator);
         printf("\tData address %p\n", iterator->data);
         printf("\tSize %zu\n", iterator->size);
+        if ( iterator->line != -1 ){
+            printf("\tLine %d\n", iterator->line);
+            printf("\tFile %s\n", iterator->name_file);
+        }
         if ( iterator->status_ == status::FREE )
             printf("\tIs free Yes\n");
         else
@@ -64,6 +70,7 @@ void memblock_t::init_memblock() {
     }
     data = this + 1;
     status_ = status::NOT_FREE;
+    line = -1;
 }
 
 void* heap_malloc(size_t count)
@@ -104,8 +111,9 @@ void* heap_malloc(size_t count)
 };
 void* heap_calloc(size_t number, size_t size)
 {
-    auto temp1 = (memblock_t*)heap_malloc(number*size) - (intptr_t)SIZE_METADANE;
+    auto temp1 = (memblock_t*)heap_malloc(number*size) - 1;
     memset(temp1 + SIZE_METADANE, 0, temp1->size);
+    return temp1;
 };
 void heap_free(void* block)
 {
@@ -116,7 +124,7 @@ void heap_free(void* block)
 void* heap_realloc(void* block, size_t size)
 {
     if ( !block )
-        return malloc(size);
+        return heap_malloc(size);
     auto temp_block = (memblock_t*)block - 1;//todo sprawdzic to
     if ( sizeof(void*) == 8 )
         size = align8(size);
@@ -173,6 +181,7 @@ void split_block(memblock_t* block, size_t s)
     block->next = new_block;
     new_block->prev = block;
     new_block->status_ = status::FREE;
+    new_block->next->prev = new_block;
 }
 
 memblock_t* fusion(memblock_t* block)
@@ -214,5 +223,63 @@ int extend_heap(size_t counter)
     fusion(old_end); //chceck
 
     heap_menager_.heap_tail = new_end_block;
+    return 0;
+}
+
+void test_linked_list()
+{
+    assert(heap_menager_.heap_tail != nullptr);
+    assert(heap_menager_.heap_head != nullptr);
+    for ( auto ptr = heap_menager_.heap_head; ptr != heap_menager_.heap_tail; ptr = ptr->next )
+    {
+        if ( ptr != heap_menager_.heap_head ){
+            assert(ptr == ptr->prev->next);
+        }
+        if ( ptr != heap_menager_.heap_tail ){
+            assert(ptr == ptr->next->prev);
+//            assert(1!=1); //to zatrzyma program
+        }
+    }
+}
+
+void *heap_malloc_debug(size_t count, int fileline, const char *filename) {
+    auto temp = (memblock_t*)heap_malloc(count) - 1;
+    return return_set_debug(fileline, filename, temp);
+}
+
+void *return_set_debug(int fileline, const char *filename, memblock_t *temp) {
+    if (temp == nullptr ){
+        return nullptr;
+    }
+    temp->line = fileline;
+    temp->name_file = (char*)filename;
+    return temp->data;
+}
+
+void *heap_calloc_debug(size_t number, size_t size, int fileline, const char *filename) {
+    auto temp = (memblock_t*)heap_calloc(number ,size) - 1;
+    return return_set_debug(fileline, filename, temp);
+}
+
+void *heap_realloc_debug(void *memblock, size_t size, int fileline, const char *filename) {
+    auto temp = (memblock_t*)heap_realloc(memblock, size)-1;
+    return return_set_debug(fileline, filename, temp);
+}
+
+int heap_validate(void)
+{
+    assert(heap_menager_.heap_tail != nullptr);
+    assert(heap_menager_.heap_head != nullptr);
+    for ( auto ptr = heap_menager_.heap_head; ptr != heap_menager_.heap_tail; ptr = ptr->next )
+    {
+        if ( ptr != heap_menager_.heap_head ){
+            assert(ptr == ptr->prev->next);
+        }
+        if ( ptr != heap_menager_.heap_tail ){
+            assert(ptr == ptr->next->prev);
+//            assert(1!=1); //to zatrzyma program
+        }
+        assert(ptr + 1 == ptr->data);
+    }
     return 0;
 }

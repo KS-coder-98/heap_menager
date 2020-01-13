@@ -30,9 +30,11 @@ typedef struct memblock_t
     memblock_t *prev = nullptr;
     size_t size = 0;
     std::mutex lock;
+    int line = -1;
+    char *name_file;
     status status_ = status::NOT_FREE;
     void *data = nullptr; // wskźnik na dane
-    size_t checksum{};
+    size_t checksum;
     int fence_end[4];
     void init_memblock();
 }memblock_t;
@@ -56,16 +58,26 @@ void* heap_calloc(size_t number, size_t size);
 void heap_free(void* memblock);
 void* heap_realloc(void* memblock, size_t size);
 
+void test_linked_list();
+
 memblock_t* find_block(size_t size);
 memblock_t* fusion(memblock_t* block);
 
 void split_block(memblock_t*, size_t);
 
 
+
+
+void* heap_malloc_debug(size_t count, int fileline, const char* filename);
+void* heap_calloc_debug(size_t number, size_t size, int fileline, const char* filename);
+void* heap_realloc_debug(void* memblock, size_t size, int fileline, const char* filename);
+
+
 void* custom_sbrk(intptr_t delta);
 
-int heap_setup(void);
+
 int extend_heap(size_t counter);
+int heap_validate(void);
 
 
 #if defined(sbrk)

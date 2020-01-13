@@ -6,41 +6,8 @@ int main(int argc, char **argv)
 {
     // Tutaj można pisać kod
     // Zapoznaj się z funkcją main w bloku #if...#endif
-//    heap_setup();
-//    extend_heap(51);
-//    int *test = (int *)heap_malloc(sizeof(int)*2);
-//    auto test = (int*)heap_realloc(test, sizeof(int)*6);
-    int *test1 = (int*)heap_malloc(1400);
-    int *test11 = (int*)heap_malloc(1400);
-    extend_heap(7);
-//    int *test111 = (int*)heap_malloc(700);
-//    int *test1111 = (int*)heap_malloc(60);
-
-
-
-
-    //    double *test2 = (double *)heap_malloc(sizeof(double)*2);
-//    double *test3 = (double *)heap_malloc(sizeof(double)*2);
-//    test3[0] = 2.23;
-//    test3[1]= 1.23;
-//    heap_free(test3);
-//    double *test6 = (double *)heap_malloc(2 * sizeof(double));
-
-//    double *test6 = (double *)heap_calloc(2, sizeof(double));
-//    printf("%lf %lf\n", test3[0], test3[1]);
-//    double *test4 = (double *)heap_malloc(sizeof(double)*2);
-//    double *test5 = (double *)heap_malloc(sizeof(double)*2);
-//    heap_free(test);
-
-//    heap_free(test3);
-
-//    heap_free(test2);
-
-
-
-
-//    heap_free(test4);
-//    heap_free(test5);
+    int *test1 = (int*)heap_calloc_debug(10, 4, __LINE__, __FILE__);
+    test_linked_list();
     print_debug();
     return 0;
 }
