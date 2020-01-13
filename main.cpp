@@ -6,9 +6,22 @@ int main(int argc, char **argv)
 {
     // Tutaj można pisać kod
     // Zapoznaj się z funkcją main w bloku #if...#endif
-    int *test1 = (int*)heap_calloc_debug(10, 4, __LINE__, __FILE__);
+    int *test1 = (int*)heap_calloc_debug(1, 4, __LINE__, __FILE__);
+    int *test2 = (int*)heap_malloc_debug(40, __LINE__, __FILE__);
+    int *test3 = (int*)heap_malloc(12* 4);
+    int *test4 = (int*)heap_malloc(12);
+    int *test11 = (int*)heap_calloc_debug(1, 4, __LINE__, __FILE__);
+//    int *test21 = (int*)heap_malloc_debug(40, __LINE__, __FILE__);
+//    int *test31 = (int*)(int*)heap_calloc_debug(10, 4, __LINE__, __FILE__);
+//    int *test41 = (int*)(int*)heap_calloc_debug(10, 4, __LINE__, __FILE__);
+    heap_free(test2);
+    heap_free(test4);
+//    heap_free(test1);
+
+//    heap_setup();
     test_linked_list();
-    print_debug();
+    heap_dump_debug_information();
+    printf("\n\n%zu\n\n", heap_get_free_gaps_count());
     return 0;
 }
 

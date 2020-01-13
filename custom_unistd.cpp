@@ -40,7 +40,7 @@ int heap_setup()
 }
 
 
-void print_debug()
+void heap_dump_debug_information()
 {
     if ( heap_menager_.heap_head == nullptr )
         return;
@@ -50,14 +50,18 @@ void print_debug()
         printf("\tAddress %p\n", iterator);
         printf("\tData address %p\n", iterator->data);
         printf("\tSize %zu\n", iterator->size);
+        printf("\tchceck sum %zu\n", iterator->checksum);
         if ( iterator->line != -1 ){
             printf("\tLine %d\n", iterator->line);
             printf("\tFile %s\n", iterator->name_file);
         }
         if ( iterator->status_ == status::FREE )
             printf("\tIs free Yes\n");
-        else
+        else if ( iterator->status_ == status::NOT_FREE )
             printf("\tIs free No\n");
+        else
+            printf("\tundefitned\n");
+
         printf("##############################\n");
     }
 }
@@ -71,6 +75,12 @@ void memblock_t::init_memblock() {
     data = this + 1;
     status_ = status::NOT_FREE;
     line = -1;
+    size_t temp1=0;
+    for (int i : fence_start)
+        temp1+=i;
+    for (int i : fence_end)
+        temp1 +=i;
+    checksum = temp1;
 }
 
 void* heap_malloc(size_t count)
@@ -239,11 +249,16 @@ void test_linked_list()
             assert(ptr == ptr->next->prev);
 //            assert(1!=1); //to zatrzyma program
         }
+        assert(ptr->checksum == ptr->count_checksum());
+        for ( size_t value : ptr->fence_start )
+            assert(value == 9);
+        for ( size_t value : ptr->fence_end )
+            assert(value == 9);
     }
 }
 
 void *heap_malloc_debug(size_t count, int fileline, const char *filename) {
-    auto temp = (memblock_t*)heap_malloc(count) - 1;
+    auto temp = (memblock_t*)heap_malloc(count)-1;
     return return_set_debug(fileline, filename, temp);
 }
 
@@ -257,7 +272,7 @@ void *return_set_debug(int fileline, const char *filename, memblock_t *temp) {
 }
 
 void *heap_calloc_debug(size_t number, size_t size, int fileline, const char *filename) {
-    auto temp = (memblock_t*)heap_calloc(number ,size) - 1;
+    auto temp = (memblock_t*)heap_calloc(number ,size);
     return return_set_debug(fileline, filename, temp);
 }
 
@@ -280,6 +295,86 @@ int heap_validate(void)
 //            assert(1!=1); //to zatrzyma program
         }
         assert(ptr + 1 == ptr->data);
+        assert(ptr->status_==status::FREE || ptr->status_==status::NOT_FREE);
     }
     return 0;
+}
+
+
+size_t memblock_t::count_checksum()
+{
+    size_t temp = 0;
+    for (int i : fence_start)
+        temp += i;
+    for (int i : fence_end)
+        temp += i;
+    return temp;
+}
+
+
+size_t memblock_t::set_checksum()
+{
+    checksum = count_checksum();
+}
+
+
+size_t heap_get_used_space(void)
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head; ptr; ptr=ptr->next ){
+        if ( ptr->status_ == status::FREE )
+            result+=SIZE_METADANE;
+        else
+            result+=(SIZE_METADANE+ptr->size);
+    }
+    return result;
+}
+
+
+size_t heap_get_largest_used_block_size()
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head; ptr; ptr=ptr->next ){
+        if ( ptr->status_ == status::NOT_FREE )
+            result = result < ptr->size ? ptr->size : result;
+    }
+    return result;
+}
+
+
+uint64_t heap_get_used_blocks_count(void)
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head->next; ptr != heap_menager_.heap_tail; ptr=ptr->next ){
+        if ( ptr->status_ == status::NOT_FREE)
+            result++;
+    }
+    return result;
+}
+size_t heap_get_free_space(void)
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head; ptr; ptr=ptr->next ){
+        result+=(SIZE_METADANE+ptr->size);
+    }
+    result -= heap_get_used_space();
+    return result;
+}
+size_t heap_get_largest_free_area(void)
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head; ptr; ptr=ptr->next ){
+        if ( ptr->status_ == status::FREE )
+            result = result < ptr->size ? ptr->size : result;
+    }
+    return result;
+}
+uint64_t heap_get_free_gaps_count(void)
+{
+    size_t result = 0;
+    for ( auto ptr = heap_menager_.heap_head; ptr; ptr=ptr->next ){
+        if ( ptr->status_ == status::FREE && ptr->size >= sizeof(void*))
+            result++;
+    }
+    return result;
 }

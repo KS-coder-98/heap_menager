@@ -37,6 +37,8 @@ typedef struct memblock_t
     size_t checksum;
     int fence_end[4];
     void init_memblock();
+    size_t count_checksum();
+    size_t set_checksum();
 }memblock_t;
 
 typedef struct heap_menager{
@@ -49,7 +51,7 @@ typedef struct heap_menager{
 static heap_menager heap_menager_;
 
 
-void print_debug();
+void heap_dump_debug_information();
 
 int heap_setup();
 
@@ -66,12 +68,16 @@ memblock_t* fusion(memblock_t* block);
 void split_block(memblock_t*, size_t);
 
 
-
-
 void* heap_malloc_debug(size_t count, int fileline, const char* filename);
 void* heap_calloc_debug(size_t number, size_t size, int fileline, const char* filename);
 void* heap_realloc_debug(void* memblock, size_t size, int fileline, const char* filename);
 
+size_t heap_get_used_space(void);
+size_t heap_get_largest_used_block_size(void);
+uint64_t heap_get_used_blocks_count(void);
+size_t heap_get_free_space(void);
+size_t heap_get_largest_free_area(void);
+uint64_t heap_get_free_gaps_count(void);
 
 void* custom_sbrk(intptr_t delta);
 
