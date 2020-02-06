@@ -50,6 +50,7 @@ typedef struct heap_menager{
 
 static heap_menager heap_menager_;
 
+memblock_t* getHead();
 
 void heap_dump_debug_information();
 
@@ -81,6 +82,16 @@ uint64_t heap_get_free_gaps_count(void);
 
 void* custom_sbrk(intptr_t delta);
 
+enum pointer_type_t{
+    pointer_null, //przekazany wskaźnik jest pusty – posiada wartość NULL
+    pointer_out_of_heap, // przekazany wskaźnik nie leży w obszarze sterty.
+    pointer_control_block, // przekazany wskaźnik leży w obszarze sterty, ale wskazuje na obszar struktur wewnętrznych.
+    pointer_inside_data_block, // przekazany wskaźnik wskazuje środek jakiegoś zaalokowanego bloku
+    pointer_unallocated, // przekazany wskaźnik wskazuje na obszar wolny (niezaalokowany).
+    pointer_valid // przekazany wskaźnik jest poprawny
+};
+
+enum pointer_type_t get_pointer_type(const void* pointer);
 
 int extend_heap(size_t counter);
 int heap_validate(void);

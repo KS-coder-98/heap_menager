@@ -228,7 +228,7 @@ int extend_heap(size_t counter)
 
     old_end->next = new_end_block;
     old_end->status_ = status::FREE;
-    old_end->size += PAGE_SIZE - SIZE_METADANE;
+    old_end->size += PAGE_SIZE * number_of_pages_neeeded - SIZE_METADANE;
     //tu jest blad ze wskzniki bloku old end wskzuje na poczatek pierwszej strony !!!!
     fusion(old_end); //chceck
 
@@ -315,6 +315,7 @@ size_t memblock_t::count_checksum()
 size_t memblock_t::set_checksum()
 {
     checksum = count_checksum();
+    return checksum;
 }
 
 
@@ -377,4 +378,42 @@ uint64_t heap_get_free_gaps_count(void)
             result++;
     }
     return result;
+}
+
+enum pointer_type_t get_pointer_type(const void* pointer)
+{
+    if ( !pointer )
+        return pointer_null;
+    else if ( pointer < heap_menager_.heap_head || pointer > heap_menager_.heap_tail ){
+        return pointer_out_of_heap;
+    }
+    else{
+        for (auto iterator = heap_menager_.heap_head; iterator; iterator = iterator->next){
+//            printf("***************\n");
+//            printf("adres danych %p\n", iterator->data);
+//            printf("aktualny wskznik %p\n", iterator);
+//            printf("poruwnywalna wartosc %p\n", pointer);
+//            printf("***************\n");
+            if ( iterator->data == pointer ){
+                return pointer_valid;
+            }
+            else if ( pointer >= iterator && pointer < iterator->data ){
+                return pointer_control_block;
+            }
+            else if ( (char*)iterator->data + 1 >= pointer && pointer < iterator->next && iterator->status_ == status::NOT_FREE){
+                return pointer_inside_data_block;
+            }
+            else if ( (char*)iterator->data + 1 >= pointer && pointer < iterator->next && iterator->status_ == status::FREE){
+                return pointer_unallocated;
+            }
+        }
+    }
+
+}
+
+
+
+memblock_t* getHead()
+{
+    return heap_menager_.heap_head;
 }
