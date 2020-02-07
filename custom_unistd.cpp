@@ -121,12 +121,13 @@ void* heap_malloc(size_t count)
 };
 void* heap_calloc(size_t number, size_t size)
 {
-    auto temp1 = (memblock_t*)heap_malloc(number*size) - 1;
-    memset(temp1 + SIZE_METADANE, 0, temp1->size);
+    auto temp1 = (memblock_t*)heap_malloc(number*size);
+    memset(temp1, 0, number*size);
     return temp1;
 };
 void heap_free(void* block)
 {
+    assert(get_pointer_type(block) == pointer_valid);
     auto temp = (memblock_t*)block - 1;
     temp->status_= status::FREE;
     fusion(temp);
@@ -134,9 +135,12 @@ void heap_free(void* block)
 };
 void* heap_realloc(void* block, size_t size)
 {
+    heap_validate();
     if ( !block )
         return heap_malloc(size);
+    assert( get_pointer_type(block) == pointer_valid );
     auto temp_block = (memblock_t*)block - 1;//todo sprawdzic to
+
     if ( sizeof(void*) == 8 )
         size = align8(size);
     else
@@ -164,7 +168,7 @@ void* heap_realloc(void* block, size_t size)
             return memcpy(new_block->data, temp_block->data, temp_block->size);
         }
     }
-    return temp_block;
+    return temp_block+1;
 };
 
 memblock_t* find_block(size_t size)
@@ -393,7 +397,7 @@ enum pointer_type_t get_pointer_type(const void* pointer)
 //            printf("aktualny wskznik %p\n", iterator);
 //            printf("poruwnywalna wartosc %p\n", pointer);
 //            printf("***************\n");
-            if ( iterator->data == pointer ){
+            if ( iterator->data == pointer && iterator->size != 0){
                 return pointer_valid;
             }
             else if ( pointer >= iterator && pointer < iterator->data ){
