@@ -435,6 +435,7 @@ bool reduce_heap() {
             temp_free_last_block->size -= (PAGE_SIZE * number_size_sub);
 
             heap_menager_.heap_tail = end_block;
+            return  true;
         }
     }
     return false;
