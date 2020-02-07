@@ -94,6 +94,8 @@ enum pointer_type_t{
 enum pointer_type_t get_pointer_type(const void* pointer);
 
 int extend_heap(size_t counter);
+bool reduce_heap();
+
 int heap_validate(void);
 
 

@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     heap_free(p3);
 
     // wszystko powinno wrócić do normy
-//    assert(heap_get_free_space() == free_bytes);
+    assert(heap_get_free_space() == free_bytes);
     assert(heap_get_used_space() == used_bytes);
 
     // już nie ma bloków

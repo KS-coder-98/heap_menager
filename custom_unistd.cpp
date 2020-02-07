@@ -130,6 +130,7 @@ void heap_free(void* block)
     auto temp = (memblock_t*)block - 1;
     temp->status_= status::FREE;
     fusion(temp);
+    reduce_heap();
 };
 void* heap_realloc(void* block, size_t size)
 {
@@ -300,7 +301,6 @@ int heap_validate(void)
     return 0;
 }
 
-
 size_t memblock_t::count_checksum()
 {
     size_t temp = 0;
@@ -311,13 +311,11 @@ size_t memblock_t::count_checksum()
     return temp;
 }
 
-
 size_t memblock_t::set_checksum()
 {
     checksum = count_checksum();
     return checksum;
 }
-
 
 size_t heap_get_used_space(void)
 {
@@ -331,7 +329,6 @@ size_t heap_get_used_space(void)
     return result;
 }
 
-
 size_t heap_get_largest_used_block_size()
 {
     size_t result = 0;
@@ -342,7 +339,6 @@ size_t heap_get_largest_used_block_size()
     return result;
 }
 
-
 uint64_t heap_get_used_blocks_count(void)
 {
     size_t result = 0;
@@ -352,6 +348,7 @@ uint64_t heap_get_used_blocks_count(void)
     }
     return result;
 }
+
 size_t heap_get_free_space(void)
 {
     size_t result = 0;
@@ -361,6 +358,7 @@ size_t heap_get_free_space(void)
     result -= heap_get_used_space();
     return result;
 }
+
 size_t heap_get_largest_free_area(void)
 {
     size_t result = 0;
@@ -370,6 +368,7 @@ size_t heap_get_largest_free_area(void)
     }
     return result;
 }
+
 uint64_t heap_get_free_gaps_count(void)
 {
     size_t result = 0;
@@ -411,9 +410,32 @@ enum pointer_type_t get_pointer_type(const void* pointer)
 
 }
 
-
-
 memblock_t* getHead()
 {
     return heap_menager_.heap_head;
+}
+
+bool reduce_heap() {
+    auto temp_end = heap_menager_.heap_tail;
+    if ( temp_end->prev->status_ == status::FREE ){ // try reduce
+        auto temp_free_last_block = temp_end->prev;
+        auto number_size_sub = temp_free_last_block->size/PAGE_SIZE;
+        if ( number_size_sub > 0 ){
+            custom_sbrk(-number_size_sub*PAGE_SIZE);
+
+            auto end_block = (memblock_t*)custom_sbrk(0) - 1;
+            end_block->init_memblock();
+            end_block->status_ = status::NOT_FREE;
+            end_block->size = 0;
+            end_block->next = nullptr;
+
+            //connecting block
+            end_block->prev = temp_free_last_block;
+            temp_free_last_block->next = end_block;
+            temp_free_last_block->size -= (PAGE_SIZE * number_size_sub);
+
+            heap_menager_.heap_tail = end_block;
+        }
+    }
+    return false;
 }
