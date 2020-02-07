@@ -444,3 +444,35 @@ bool reduce_heap() {
     }
     return false;
 }
+
+void* heap_get_data_block_start(const void* pointer)
+{
+    auto type_block = get_pointer_type(pointer);
+    if ( type_block == pointer_null || type_block == pointer_out_of_heap )
+        return nullptr;
+    else if ( type_block == pointer_valid )
+        return  (void*)pointer;
+    for (auto iterator = heap_menager_.heap_head; iterator; iterator = iterator->next){
+        if ( iterator->data == pointer && iterator->size != 0){
+            return iterator->data;
+        }
+        else if ( pointer >= iterator && pointer < iterator->data ){
+            return iterator->data;
+        }
+        else if ( (char*)iterator->data + 1 >= pointer && pointer < iterator->next && iterator->status_ == status::NOT_FREE){
+            return iterator->data;
+        }
+        else if ( (char*)iterator->data + 1 >= pointer && pointer < iterator->next && iterator->status_ == status::FREE){
+            return iterator->data;
+        }
+    }
+}
+
+size_t heap_get_block_size(const void* memblock)
+{
+    auto temp = (memblock_t*)memblock;
+    if ( pointer_valid == get_pointer_type(temp) ){
+        return (temp-1)->size;
+    }
+    return 0;
+}

@@ -98,6 +98,9 @@ bool reduce_heap();
 
 int heap_validate(void);
 
+void* heap_get_data_block_start(const void* pointer);
+
+size_t heap_get_block_size(const void* memblock);
 
 #if defined(sbrk)
 #undef sbrk
