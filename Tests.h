@@ -12,7 +12,7 @@ void test2(); // test spradza czy w zaolokowane wartosci po przypisaniu sa wstaw
 void test3(); // test realoc
 void test4(); // test free
 void test5(); // test calloc
-void test7();
+void test6(); // malloc algined
 void test8();
 void test9();
 void test10();

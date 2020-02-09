@@ -221,3 +221,38 @@ void test5()
 //     już nie ma bloków
     assert(heap_get_used_blocks_count() == 0);
 }
+
+void  test6()
+{
+    int status = heap_setup();
+    assert(status == 0);
+    // parametry pustej sterty
+    size_t free_bytes = heap_get_free_space();
+    size_t used_bytes = heap_get_used_space();
+
+    auto p = heap_malloc_aligned(123);
+    auto k = heap_malloc(123*1024);
+
+    auto p1 = heap_malloc_aligned(123);
+    auto k1 = heap_malloc(123*3);
+
+    auto p2 = heap_malloc_aligned(1024);
+    auto k2 = heap_malloc(2*1024*1024);
+
+//    auto p3 = heap_malloc_aligned(123);
+    heap_dump_debug_information();
+     heap_free(p);
+     heap_free(k);
+    heap_free(p1);
+    heap_free(k1);
+    heap_free(p2);
+    heap_free(k2);
+//    heap_free(p3);
+    // wszystko powinno wrócić do normy
+    assert(heap_get_free_space() == free_bytes);
+    assert(heap_get_used_space() == used_bytes);
+    heap_validate();
+//     już nie ma bloków
+    assert(heap_get_used_blocks_count() == 0);
+//    heap_dump_debug_information();
+}

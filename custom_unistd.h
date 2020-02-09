@@ -107,6 +107,7 @@ void* heap_calloc_aligned(size_t number, size_t size);
 void* heap_realloc_aligned(void* memblock, size_t size);
 memblock_t* find_block_aligned_in_free_space(size_t size);
 memblock_t* find_block_aligned(size_t size);
+memblock_t* find_block_aligned_in_free_space_to_realloc(memblock_t* block, size_t size);
 
 #if defined(sbrk)
 #undef sbrk

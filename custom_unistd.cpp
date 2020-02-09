@@ -14,7 +14,7 @@ int heap_setup()
 
     auto *start_block = (memblock_t *)custom_sbrk(0);
     start_block->init_memblock();
-    if ( custom_sbrk(PAGE_SIZE*2) == (void*)-1 ){ // tod zmienic sporwrotem na PAGE size
+    if ( custom_sbrk(PAGE_SIZE) == (void*)-1 ){ // tod zmienic sporwrotem na PAGE size
         printf("sbrk fail");
         return -1;
     }
@@ -100,7 +100,6 @@ void* heap_malloc(size_t count)
             new_block->status_ = status::NOT_FREE;
         }
         else{ // jesli nie znajdzie wystarczjaco duzego bloku
-            //todo
             int error = extend_heap(count);
             if ( error == -1 ){
                 return nullptr;
@@ -158,7 +157,7 @@ void* heap_realloc(void* block, size_t size)
             }
         }
         else{ //realoc a alokacja nowego bloku
-            auto new_block = (memblock_t*)malloc(size);
+            auto new_block = (memblock_t*)heap_malloc(size);
             if ( !new_block )
                 return nullptr;
             new_block->init_memblock();
@@ -167,7 +166,7 @@ void* heap_realloc(void* block, size_t size)
             return memcpy(new_block->data, temp_block->data, temp_block->size);
         }
     }
-    return temp_block+1;
+    return temp_block->data;
 };
 
 memblock_t* find_block(size_t size)
@@ -232,6 +231,8 @@ memblock_t* find_block_aligned_in_free_space(size_t size)
     
     return nullptr;
 }
+
+
 
 void split_block(memblock_t* block, size_t s)
 {
@@ -338,6 +339,7 @@ void *heap_realloc_debug(void *memblock, size_t size, int fileline, const char *
 
 int heap_validate(void)
 {
+    test_linked_list();
     assert(heap_menager_.heap_tail != nullptr);
     assert(heap_menager_.heap_head != nullptr);
     for ( auto ptr = heap_menager_.heap_head; ptr != heap_menager_.heap_tail; ptr = ptr->next )
@@ -447,11 +449,6 @@ enum pointer_type_t get_pointer_type(const void* pointer)
     }
     else{
         for (auto iterator = heap_menager_.heap_head; iterator; iterator = iterator->next){
-//            printf("***************\n");
-//            printf("adres danych %p\n", iterator->data);
-//            printf("aktualny wskznik %p\n", iterator);
-//            printf("poruwnywalna wartosc %p\n", pointer);
-//            printf("***************\n");
             if ( iterator->data == pointer && iterator->size != 0){
                 return pointer_valid;
             }
@@ -550,27 +547,67 @@ void* heap_malloc_aligned(size_t count)
             if ( (new_block->size - s) >= (SIZE_METADANE + sizeof(void*)) )
                 split_block(new_block, s);
             new_block->status_ = status::NOT_FREE;
+            return new_block->data;
         }
         else { // szukamy czy mozna uzyskać taki blok z wolnego mjesca
-
+            new_block = find_block_aligned_in_free_space(s);
+            if ( new_block != nullptr ){
+                assert(((intptr_t)new_block->data & (intptr_t)(PAGE_SIZE - 1)) == 0);
+                return new_block->data;
+            }
         }
-//        else{ // jesli nie znajdzie wystarczjaco duzego bloku
-//            int error = extend_heap(count);
-//            if ( error == -1 ){
-//                return nullptr;
-//            }
-//            else if ( error == 0 ){ // todo
-//                return heap_malloc(count);
-//            }
-//        }
+        //powiekszamy sterte
+        int error = extend_heap(count);
+        if ( error == -1 ){
+            return nullptr;
+        }
+        else if ( error == 0 ){ // todo
+            return heap_malloc_aligned(count);
+        }
     }
     else{
         heap_setup();
-        return heap_malloc(s);
+        return heap_malloc_aligned(s);
     }
-    assert(new_block!= nullptr);
-    new_block->data = new_block+1;
-    return ( new_block->data );
 }
-void* heap_calloc_aligned(size_t number, size_t size);
-void* heap_realloc_aligned(void* memblock, size_t size);
+void* heap_calloc_aligned(size_t number, size_t size){
+    auto temp1 = (memblock_t*)heap_malloc_aligned(number*size);
+    memset(temp1, 0, number*size);
+    return temp1;
+}
+void* heap_realloc_aligned(void* memblock, size_t size){ //todo
+    heap_validate();
+    if ( !memblock )
+        return heap_malloc_aligned(size);
+    assert( get_pointer_type(memblock) == pointer_valid );
+    auto temp_block = (memblock_t*)memblock - 1;//todo sprawdzic to
+
+    if ( sizeof(void*) == 8 )
+        size = align8(size);
+    else
+        size = align4(size);
+    //jesli rozmiar w reaaloc jest mnejszy lub rowny zadanemu
+    if ( temp_block->size >= size){
+        if ( temp_block->size - size >= SIZE_METADANE + MACHONE_WORD )
+            split_block(temp_block, size);
+    }
+    else{ //czyli powiekszamy
+        //nastepne blok jest wolny i ma wystarczjaco duzo mjesca
+        if ( temp_block->next && temp_block->next->status_ == status::FREE && temp_block->size + SIZE_METADANE + temp_block->next->size >= size){
+            fusion(temp_block);
+            if ( temp_block->size >= SIZE_METADANE + MACHONE_WORD ){
+                split_block(temp_block, size);
+            }
+        }
+        else{ //realoc a alokacja nowego bloku
+            auto new_block = (memblock_t*)heap_malloc_aligned(size);
+            if ( !new_block )
+                return nullptr;
+            new_block->init_memblock();
+            temp_block->status_ = status::FREE;
+            fusion(temp_block);
+            return memcpy(new_block->data, temp_block->data, temp_block->size);
+        }
+    }
+    return temp_block->data;
+}
