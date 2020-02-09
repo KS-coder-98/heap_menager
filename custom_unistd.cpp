@@ -14,7 +14,7 @@ int heap_setup()
 
     auto *start_block = (memblock_t *)custom_sbrk(0);
     start_block->init_memblock();
-    if ( custom_sbrk(PAGE_SIZE) == (void*)-1 ){
+    if ( custom_sbrk(PAGE_SIZE*2) == (void*)-1 ){ // tod zmienic sporwrotem na PAGE size
         printf("sbrk fail");
         return -1;
     }
@@ -38,7 +38,6 @@ int heap_setup()
 
     return 0;
 }
-
 
 void heap_dump_debug_information()
 {
@@ -65,7 +64,6 @@ void heap_dump_debug_information()
         printf("##############################\n");
     }
 }
-
 
 void memblock_t::init_memblock() {
     for ( size_t i = 0; i<4; i++){
@@ -105,7 +103,7 @@ void* heap_malloc(size_t count)
             //todo
             int error = extend_heap(count);
             if ( error == -1 ){
-                return NULL;
+                return nullptr;
             }
             else if ( error == 0 ){
                 return heap_malloc(count);
@@ -116,6 +114,7 @@ void* heap_malloc(size_t count)
         heap_setup();
         return heap_malloc(s);
     }
+    assert(new_block!= nullptr);
     new_block->data = new_block+1;
     return ( new_block->data );
 };
@@ -183,13 +182,64 @@ memblock_t* find_block(size_t size)
     return nullptr;
 }
 
+memblock_t* find_block_aligned(size_t size)
+{
+    auto temp_block = heap_menager_.heap_head;
+    while ( temp_block ){
+        if ( temp_block->size >= size + SIZE_METADANE  && temp_block->status_ == status::FREE && (((intptr_t)temp_block & (intptr_t)(PAGE_SIZE - 1)) == 0) ){
+            return temp_block;
+        }
+        temp_block = temp_block->next;
+    }
+    return nullptr;
+}
+
+memblock_t* find_block_aligned_in_free_space(size_t size)
+{
+    auto temp_block = heap_menager_.heap_head;
+    while ( temp_block ){
+        if ( temp_block->status_ == status::FREE ){
+            auto tempPtr = (intptr_t)heap_menager_.heap_head;
+            assert(tempPtr);
+            while ( tempPtr < (intptr_t)temp_block->next){
+                tempPtr += PAGE_SIZE;
+            }
+            tempPtr-= PAGE_SIZE;
+            auto new_algined_block = (memblock_t*) tempPtr;
+            auto size_from_new_page = temp_block->size-(tempPtr - (intptr_t)temp_block->data);
+            if (  size_from_new_page >= size  && new_algined_block >= temp_block->data){ //wystarczajaco duzo mjejsca w wolnym bloku od wielokrotnosci strony
+                //stworzyc nowy blok
+                new_algined_block -=1;
+                new_algined_block->init_memblock();
+
+                new_algined_block->prev = temp_block;
+                new_algined_block->next = new_algined_block->prev->next;
+
+                new_algined_block->next->prev = new_algined_block;
+                new_algined_block->prev->next = new_algined_block;
+
+                new_algined_block->size = size_from_new_page;
+
+                temp_block->size = (intptr_t)(new_algined_block)-(intptr_t)temp_block->data; // temp_block wolny blok o wystarczajaco duzej przestrzeni
+
+                split_block((memblock_t*)new_algined_block, size);
+                return new_algined_block;
+            }
+            assert(((intptr_t)tempPtr & (intptr_t)(PAGE_SIZE - 1)) == 0);
+        }
+        temp_block = temp_block->next;
+    }
+    
+    return nullptr;
+}
+
 void split_block(memblock_t* block, size_t s)
 {
     memblock_t* new_block;
     assert(block->data != nullptr);
     new_block = (memblock_t*)((intptr_t)block->data + s);
     new_block->init_memblock();
-    new_block->size = block->size - s - SIZE_METADANE;
+    new_block->size = block->size - s - SIZE_METADANE; //zmienic
     new_block->next = block->next;
     new_block->status_ = status::FREE;
     block->size = s;
@@ -297,6 +347,11 @@ int heap_validate(void)
         }
         if ( ptr != heap_menager_.heap_tail ){
             assert(ptr == ptr->next->prev);
+            auto t1 = ((intptr_t)ptr->data + ptr->size);
+            auto t2 = (intptr_t)ptr->next;
+            printf("%zu %zu %lu\n", t1, t2, t2-t1);
+            assert( ((intptr_t)ptr->data + ptr->size) == (intptr_t)ptr->next);
+
 //            assert(1!=1); //to zatrzyma program
         }
         assert(ptr + 1 == ptr->data);
@@ -445,7 +500,7 @@ bool reduce_heap() {
     return false;
 }
 
-void* heap_get_data_block_start(const void* pointer)
+void* heap_get_data_block_start(const void* pointer) // przetestowac
 {
     auto type_block = get_pointer_type(pointer);
     if ( type_block == pointer_null || type_block == pointer_out_of_heap )
@@ -468,7 +523,7 @@ void* heap_get_data_block_start(const void* pointer)
     }
 }
 
-size_t heap_get_block_size(const void* memblock)
+size_t heap_get_block_size(const void* memblock) // przetestowac
 {
     auto temp = (memblock_t*)memblock;
     if ( pointer_valid == get_pointer_type(temp) ){
@@ -476,3 +531,46 @@ size_t heap_get_block_size(const void* memblock)
     }
     return 0;
 }
+
+void* heap_malloc_aligned(size_t count)
+{
+    memblock_t *new_block = nullptr;//, *last;
+    size_t s;
+    if (sizeof(void*) == 8 )
+        s = align8(count);
+    else
+        s = align4(count);
+    if ( heap_menager_.init ){
+        new_block = find_block_aligned(s); // ok
+        if ( new_block ){ //jesli znajdzie wystarczajaco duzy blok bedzie na krotnoscia strony - metadane size
+            assert(((intptr_t)new_block & (intptr_t)(PAGE_SIZE - 1)) == 0);
+            //czy mozna podzielic blok
+            new_block->init_memblock();
+            new_block->status_ = status::NOT_FREE;
+            if ( (new_block->size - s) >= (SIZE_METADANE + sizeof(void*)) )
+                split_block(new_block, s);
+            new_block->status_ = status::NOT_FREE;
+        }
+        else { // szukamy czy mozna uzyskać taki blok z wolnego mjesca
+
+        }
+//        else{ // jesli nie znajdzie wystarczjaco duzego bloku
+//            int error = extend_heap(count);
+//            if ( error == -1 ){
+//                return nullptr;
+//            }
+//            else if ( error == 0 ){ // todo
+//                return heap_malloc(count);
+//            }
+//        }
+    }
+    else{
+        heap_setup();
+        return heap_malloc(s);
+    }
+    assert(new_block!= nullptr);
+    new_block->data = new_block+1;
+    return ( new_block->data );
+}
+void* heap_calloc_aligned(size_t number, size_t size);
+void* heap_realloc_aligned(void* memblock, size_t size);
