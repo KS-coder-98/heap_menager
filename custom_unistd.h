@@ -44,7 +44,7 @@ typedef struct memblock_t
 typedef struct heap_menager{
     memblock_t *heap_head = nullptr; // wskźnik na pierwszy nieusuwalny element
     memblock_t *heap_tail = nullptr; // wskaźnik na osttni nie smiertelny element
-    std::mutex lock;
+    std::recursive_mutex lock;
     bool init = false;
 }heap_menager;
 
